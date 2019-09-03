@@ -1,33 +1,24 @@
 package com.salesoft.DAO.intf;
 
-import com.salesoft.model.CartItem;
-import com.salesoft.model.Invoice;
-import com.salesoft.model.InvoiceItem;
 import java.util.ArrayList;
 
 /**
  *
  * @author teyyub , Dec 24, 2017 , 10:05:07 AM
  */
-public interface InvoiceDAOIntf {
+public interface InvoiceDAOIntf<Type, Key1, Key2> {
 
-    Invoice getInvoiceById(int id);
+    public void create(Type invoice);
 
-    ArrayList<Invoice> getAllInvoice();
+    public void update(Type invoice);
 
-    ArrayList<InvoiceItem> getAllInvoiceItemListById(Integer id);
+    public void delete(Type invoice);
 
-    void updateInvoiceCustoemerNameById(Integer id, String customerName);
+    public Type get(Key1 id);
 
-    ArrayList<Invoice> getInvoiceListByNameLike(String name);
+    ArrayList<Type> getAll();
 
-    void insertNewInvoice(String customer, Double mebleg);
+    Key1 getLastId();
 
-    void insertNewInvoiceItem(Integer history_id, CartItem c);
-
-    Integer getLastIdInInvoiceTable();
-
-    void updateInvoiceItem(InvoiceItem invoiceItem);
-
-    void updateInvoice(Invoice invoice);
+    ArrayList<Type> getAllByNameLike(Key2 name);
 }

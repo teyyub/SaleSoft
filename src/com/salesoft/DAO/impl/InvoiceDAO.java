@@ -1,58 +1,79 @@
 package com.salesoft.DAO.impl;
 
-import com.salesoft.DAO.DatabaseConnection;
 import com.salesoft.DAO.intf.InvoiceDAOIntf;
 import com.salesoft.database.DBUtil;
 import com.salesoft.database.SQL;
-import com.salesoft.model.CartItem;
 import com.salesoft.model.Invoice;
 import com.salesoft.model.InvoiceItem;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import com.salesoft.util.MyDateConverter;
+import com.salesoft.util.MyExceptionLogger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Date;
 
-public class InvoiceDAO  implements InvoiceDAOIntf{
+public class InvoiceDAO implements InvoiceDAOIntf<Invoice, Integer, String> {
 
-    private static final String PRODUCT_TABLE_NAME = "satish_history";
+    InvoiceItemDAO invoiceItemDAO = new InvoiceItemDAO();
 
-    private static final String getInvoiceById = "SELECT * FROM satish_history WHERE id=?";
-    private static final String getAllInvoice = "SELECT * FROM satish_history ORDER BY `id` DESC"; //yeniler yuxarida
-    private static final String getAllInvoiceItemById = "SELECT * FROM satish_list WHERE history_id=? ORDER BY `id` DESC";
-    private static final String SQL_UPDATE_INVOICE_CUSTOMERNAME_BY_ID = "UPDATE " + PRODUCT_TABLE_NAME + " SET customer=? WHERE id=?;";
-    private static final String SQL_GEL_ALL_INVOICE_BY_NAME_LIKE = "SELECT * FROM " + PRODUCT_TABLE_NAME + " WHERE customer LIKE ?";
-
-    /**
-     *
-     * @param id id ile history den melumatari alacaq ve invoice obyektini qurur
-     * sonra Satish_list den satish melumatlarini alib add edecek bir bir liste
-     * sonra onuda add edecek invoice obyektine Sonra Qaytaracaq
-     * @return Invoice - obyekti qaytarir incinde propertilerile ve InvoiceItem
-     * lerle birge
-     */
     @Override
-    public Invoice getInvoiceById(int id) {
-        Invoice invoice = null;
+    public void create(Invoice invoice) {
         try {
-            ArrayList<InvoiceItem> list = getAllInvoiceItemListById(id);
+//            String SQLQuery = SQL.InvoiceSQL.CREATE(invoice);
+//            UserOperationLogger.logSQL(SQLQuery);
+//            DBUtil.mySQLExecuteUpdate(SQLQuery);
 
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(getInvoiceById);
-            ps.setInt(1, id);
-
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-
-                invoice = new Invoice(rs.getInt(1), rs.getString(6), rs.getDouble(3), rs.getString(2), list);
-
-            }
+            String SQLQuery = SQL.InvoiceSQL.CREATE_FOR_ACCES(invoice);
+            DBUtil.msAccessExecuteUpdate(SQLQuery);
 
         } catch (SQLException ex) {
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            MyExceptionLogger.logException("SQLException - InvoiceDAO.create(Invoice invoice)", ex);
+        }
+    }
+
+    @Override
+    public void update(Invoice invoice) {
+        try {
+//            String SQLQuery = SQL.InvoiceSQL.UPDATE(invoice);
+//            UserOperationLogger.logSQL(SQLQuery);
+//            DBUtil.mySQLExecuteUpdate(SQLQuery);
+
+            String SQLQuery = SQL.InvoiceSQL.UPDATE_FOR_ACCESS(invoice);
+            DBUtil.msAccessExecuteUpdate(SQLQuery);
+
+        } catch (SQLException ex) {
+            MyExceptionLogger.logException("SQLException - InvoiceDAO.update(Invoice invoice)", ex);
+        }
+    }
+
+    @Override
+    public void delete(Invoice invoice) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Invoice get(Integer id) {
+        Invoice invoice = null;
+        try {
+//            String SQLQuery = SQL.InvoiceSQL.GET(id);
+//            UserOperationLogger.logSQL(SQLQuery);
+//            ArrayList<InvoiceItem> list = invoiceItemDAO.getAllById(id);
+//            ResultSet rs = DBUtil.mySQLExecuteQuery(SQLQuery);
+
+            ArrayList<InvoiceItem> list = invoiceItemDAO.getAllById(id);
+            ResultSet rs = DBUtil.msAccessExecuteQuery("SELECT * FROM Invoice WHERE id=" + id);
+
+            if (rs.next()) {
+                invoice = new Invoice(
+                        rs.getInt(1),
+                        rs.getString(2),
+                        rs.getDouble(3),
+                        new java.util.Date(rs.getTimestamp(4).getTime()),
+                        list
+                );
+            }
+        } catch (SQLException ex) {
+            MyExceptionLogger.logException("SQLException - InvoiceDAO.get(int id)", ex);
         }
         return invoice;
     }
@@ -62,204 +83,76 @@ public class InvoiceDAO  implements InvoiceDAOIntf{
      * @return
      */
     @Override
-    public   ArrayList<Invoice> getAllInvoice() {
+    public ArrayList<Invoice> getAll() {
         ArrayList<Invoice> list = new ArrayList<>();
-
         try {
+//            String SQLQuery = SQL.InvoiceSQL.GET_ALL();
+//            UserOperationLogger.logSQL(SQLQuery);
+//            ResultSet rs = DBUtil.mySQLExecuteQuery(SQLQuery);
 
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(getAllInvoice);
-
-            ResultSet rs = ps.executeQuery();
+            ResultSet rs = DBUtil.msAccessExecuteQuery("SELECT * FROM Invoice ORDER BY `id` DESC LIMIT 1000");
 
             while (rs.next()) {
-
-                list.add(new Invoice(rs.getInt(1), rs.getString(6), rs.getDouble(3), rs.getString(2)));
-
+                list.add(new Invoice(
+                        rs.getInt(1),
+                        rs.getString(2),
+                        rs.getDouble(3),
+                        rs.getTimestamp(4),
+                        new ArrayList<>()
+                ));
             }
 
         } catch (SQLException ex) {
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            MyExceptionLogger.logException("SQLException - InvoiceDAO.getAll()", ex);
         }
         return list;
 
     }
 
     @Override
-    public   ArrayList<InvoiceItem> getAllInvoiceItemListById(Integer id) {
-        InvoiceItem invoiceItem;
-        try {
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(getAllInvoiceItemById);
-            ArrayList<InvoiceItem> arrayList = new ArrayList<>();
-            ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-
-            boolean found = false;
-            while (rs.next()) {
-                invoiceItem = new InvoiceItem(rs.getInt(1), rs.getString(4), rs.getInt(5), rs.getDouble(7), rs.getInt(3), rs.getString(8));
-
-                arrayList.add(invoiceItem);
-
-                found = true;
-            }
-            DatabaseConnection.close(con);
-            DatabaseConnection.close(rs);
-            DatabaseConnection.close(ps);
-            if (found) {
-                return arrayList;
-            } else {
-                return null; // no entires found
-            }
-        } catch (SQLException ex) {
-//            new MyLogger("ProductDAO.getAllProductList() - SQLException").getLogger().log(Level.SEVERE, "SQLException - in metod: (ArrayList<Product> getAllProductList())", ex);//LOG++++++++++++++++++++
-            return (null);
-        }
-    }
-
-    /**
-     * Bu metod Evvel Istifade elediyimdir bunu Silecem yaxinda
-     *
-     * @param id
-     * @param customerName
-     * @deprecated
-     */
-    @Override
-    public   void updateInvoiceCustoemerNameById(Integer id, String customerName) {
-//        MainApp.getLogger().log(Level.SEVERE, "InvoiceDAO.updateInvoiceCustoemerNameById(int id, String customerName)  \n"
-//                + "id=: " + id
-//                + "customerName=:" + customerName);
-        try {
-
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(SQL_UPDATE_INVOICE_CUSTOMERNAME_BY_ID);
-            ps.setString(1, customerName);
-            ps.setInt(2, id);
-
-            ps.executeUpdate();
-
-        } catch (Exception ex) {
-//            new MyLogger("Exception in - InvoiceDAO.updateInvoiceCustoemerNameById(int id, String customerName)").getLogger().log(Level.SEVERE, "\n"
-//                    + "Parametr customerName=" + customerName + "\n"
-//                    + "Parametr id=" + id + "\n", ex);//LOG++++++++++++++++++++
-
-        }
-    }
-
-    @Override
-    public   ArrayList<Invoice> getInvoiceListByNameLike(String name) {
+    public ArrayList<Invoice> getAllByNameLike(String name) {
         ArrayList<Invoice> list = new ArrayList<>();
         try {
+//            String SQLQuery = SQL.InvoiceSQL.GET_ALL_BY_NAME_LIKE(name);
+//            UserOperationLogger.logSQL(SQLQuery);
+//            ResultSet rs = DBUtil.mySQLExecuteQuery(SQLQuery);
 
-            Connection con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(SQL_GEL_ALL_INVOICE_BY_NAME_LIKE);
-            ps.setString(1, "%" + name + "%");
-
-            ResultSet rs = ps.executeQuery();
-
+            ResultSet rs = DBUtil.msAccessExecuteQuery("SELECT * FROM Invoice WHERE customer LIKE '%" + name + "%'");
             while (rs.next()) {
-
-                list.add(new Invoice(rs.getInt(1), rs.getString(6), rs.getDouble(3), rs.getString(2)));
-
+                list.add(
+                        new Invoice(
+                                rs.getInt(1),
+                                rs.getString(2),
+                                rs.getDouble(3),
+                                new java.util.Date(rs.getTimestamp(4).getTime()),
+                                new ArrayList<>()
+                        )
+                );
             }
-
         } catch (SQLException ex) {
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            MyExceptionLogger.logException("SQLException - InvoiceDAO.getInvoiceListByNameLike(String name)", ex);
         }
         return list;
     }
 
     @Override
-    public   void insertNewInvoice(String customer, Double mebleg) {
+    public Integer getLastId() {
         try {
-            DBUtil.dbExecuteUpdate(
-                    SQL.Invoice.INVOICE_ADD_NEW.
-                            replaceAll("customerR", customer).
-                            replaceAll("meblegR", mebleg.toString())
-            );
-        } catch (SQLException ex) {
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+//            String SQLQuery = SQL.InvoiceSQL.GET_LAST_ID();
+//            UserOperationLogger.logSQL(SQLQuery);
+//            ResultSet rs = DBUtil.mySQLExecuteQuery(SQLQuery);
 
-    @Override
-    public   void insertNewInvoiceItem(Integer history_id, CartItem c) {
-        try {
-            DBUtil.dbExecuteUpdate(
-                    SQL.InvoiceItem.INVOICEITEM_ADD_NEW
-                            .replaceAll("history_idR", history_id.toString())
-                            .replaceAll("p_idR", c.getId().toString())
-                            .replaceAll("p_nameR", c.getName())
-                            .replaceAll("p_sayR", c.getQty().toString())
-                            .replaceAll("p_qiymetR", c.getSalePrice().toString())
-                            .replaceAll("p_meblegR", c.getTotalPrice().toString())
-                            .replaceAll("p_barcodeR", c.getProduct().getBarCode())
-                            .replaceAll("p_qeydR", "note")
-                            .replaceAll("p_satishdan_evvelki_sayR", c.getProduct().getQty().toString())
-            );
-        } catch (SQLException ex) {
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+            ResultSet rs = DBUtil.msAccessExecuteQuery("select * from Invoice order by ID DESC LIMIT 1");
 
-    @Override
-    public   Integer getLastIdInInvoiceTable() {
-        try {
-            ResultSet rs = DBUtil.dbExecuteQuery(SQL.Invoice.INVOICE_GET_LAST_ID);
             if (rs.next()) {
-                return rs.getInt("MAX(id)");
+//                return rs.getInt("MAX(id)");
+                return rs.getInt(1);
             } else {
                 return null;
             }
         } catch (SQLException ex) {
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
+            MyExceptionLogger.logException("SQLException - InvoiceDAO.getLastIdInInvoiceTable()", ex);
             return null;
         }
     }
-
-    @Override
-    public   void updateInvoiceItem(InvoiceItem invoiceItem) {
-        try {
-            DBUtil.dbExecuteUpdate(
-                    SQL.InvoiceItem.INVOICEITEM_UPDATE_BY_ID
-                            .replaceAll("p_sayR", invoiceItem.getQty().toString())
-                            .replaceAll("p_meblegR", invoiceItem.getTotalPrice().toString())
-                            .replaceAll("idR", invoiceItem.getId().toString())
-            );
-        } catch (SQLException ex) {
-            System.out.println("com.salesoft.DAO.InvoiceDAO.updateInvoiceItemQtyById()");
-            System.err.println("SQLException");
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-    }
-
-    /**
-     * BU metod Invoice - Obyetinin ozunu yenileyir ID-esasinda, id-ni de hele
-     * obyektden alir
-     *
-     * @param invoice - yenileyeceyimiz Invoice-obyekti hele hemin obyektin
-     * ID-sini alib onunesasinda yenileyir
-     * @see
-     *
-     */
-    @Override
-    public   void updateInvoice(Invoice invoice) {
-
-        try {
-            //`customer`='customerR', `mebleg`='meblegR', `odenish`='', `qaliq`='' WHERE  `id`=idR;";
-            DBUtil.dbExecuteUpdate(
-                    SQL.Invoice.INVOICE_UPDATE_BY_ID
-                            .replaceAll("customerR", invoice.getCustomerName())
-                            .replaceAll("meblegR", invoice.getTotalPrice().toString())
-                            .replaceAll("idR", invoice.getId().toString())
-            );
-        } catch (SQLException ex) {
-            System.out.println("com.salesoft.DAO.InvoiceDAO.updateInvoice()");
-            System.err.println("SQLException");
-            Logger.getLogger(InvoiceDAO.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-    }
-
 }

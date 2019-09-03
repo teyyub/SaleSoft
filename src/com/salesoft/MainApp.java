@@ -15,61 +15,25 @@ import javafx.stage.Stage;
  */
 public class MainApp extends Application {
 
-    public MainApp() {
-
-        // ilk Hazirliqlarimizi Inicializasiyamizi edek
-        // qovluqlarimizi yoxlayaq her shey yolundadirmi deye
-        //1-ci Fayl ve Qovluqlarimizi Hazirlayaq
-        Initializator.initFoldersAndFiles();
-
-        //2 - ci ise Properties Fayllarimizi hazirlayaq, artiq emin ola bilerik ki FileNotFoundException CIXMAYACAQ
-        Initializator.initMyProperties();
-
-        //3-cu olaraq ise, S
-        // Server ile elaqe Qurmaga Calishaq, 
-        // Sonuludurse Bildirek, 
-        // Melumat bazasinin qurulu olub olmadigini yoxlayaq ve deyilse Qurmagi teklif edek
-        Initializator.initDataBase();
-
-    }
-
-    //Consolumuzu Fayla yazmaq ucun bu obyektden istifade edeceyik
-    //PrintStream out = RLogger.logConsoleToFile();
-
-
-    private static Stage primaryStage;
-
-    //bunu static eledimki obiri classlardan bunu ala bilim
-    public static Stage getPrimaryStage() {
-        return primaryStage;
-    }
-
     @Override
     public void start(Stage primaryStage) {
-        MainApp.primaryStage = primaryStage;
+        Initializator.initFoldersAndFiles();
+        Initializator.initMyProperties();
 
-        //ALL_PROPERTIES = AllPropertiesGetDAO.getAllProperties();
-
-        String loginViewTitle = MyProperties.getUIProperties().getApplicationTitle();
-
-        /**
-         * Login Sehifemizin URL addressi
-         */
         URL loginViewURL = MyProperties.getURLProperties().getLoginFxmlURL();
-        
-        /**
-         * Login Sehifemizin Scene obyekti
-         */
         Scene loginViewScene = MyFXMLLoader.getSceneFromURL(loginViewURL);
 
         primaryStage.setScene(loginViewScene);
-
-        primaryStage.setTitle(loginViewTitle);
-
+        primaryStage.setTitle(" * SaleSoft Alpha versiya 1.21 * ");
         primaryStage.getIcons().add(new Image("com/salesoft/image/icon.png"));
         primaryStage.setMaximized(false);
-        primaryStage.setMinHeight(500.0);
-        primaryStage.setMinWidth(850.0);
+
+        // Bu Yontemle Pencerenin olcusunu deyishmeyi qadagn edirik
+        primaryStage.resizableProperty().set(false);
+
+        //ekranin olcusunu deyishmeye icaze vermirikse minimum olcu qoymagada ehtiyyac yoxdur
+//        primaryStage.setMinHeight(500.0);
+//        primaryStage.setMinWidth(850.0);
         primaryStage.show();
     }
 

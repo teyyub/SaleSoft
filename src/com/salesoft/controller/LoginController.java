@@ -1,17 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.salesoft.controller;
 
-import com.salesoft.DAO.DatabaseConnection;
 import com.salesoft.DAO.impl.UserDAO;
 import com.salesoft.custom.CustomPf;
 import com.salesoft.custom.CustomTf;
 import com.salesoft.database.DBUtil;
+import com.salesoft.util.ExceptionShowDialog;
 import com.salesoft.util.MyFXMLLoader;
-import com.salesoft.util.MyLogger;
+import com.salesoft.util.MyExceptionLogger;
 import com.salesoft.util.MyProperties;
 import java.io.IOException;
 import java.net.URL;
@@ -73,6 +68,7 @@ public class LoginController implements Initializable {
     CustomPf cPF = new CustomPf();
 
     UserDAO UserDAO = new UserDAO();
+    //private final String db = MyProperties.getDBProperties().getDbName();
 
     /**
      * Initializes the controller class.
@@ -90,14 +86,36 @@ public class LoginController implements Initializable {
         btnLogin.disableProperty().bind(boolenBinding);
         userNameField.requestFocus();
 
+        try {
+            /// biz indi ne edeceyik
+            // demeli eger 1-eded qeydiyyat varsa bazada burdan qeydiyyat mumkun olmasin ve qeydiyyat linkini sondurek
+            if ((DBUtil.msAccessExecuteQuery(("SELECT Id FROM User ORDER BY Id ASC LIMIT 1"))).next()) {
+                DBUtil.AllDisconnect();
+                //demeli qeydiyyat var
+                //ne edirik ? -> linki not managed edirik
+                hlCreateAccount.setManaged(false);
+
+                //hetta qeydiyyat varsa DB setup -u da sondurek
+                //mence men qurrashdirdiqdan sonra istifadeci niye deyishsin ki
+                hlDatabase.setManaged(false);
+            } else {
+                //hlDbOnAction(new ActionEvent()); mysql da lazim olacaq
+                loadRegistration();
+            }
+        } catch (SQLException ex) {
+            System.err.println("com.salesoft.controller.LoginController.initialize() - ");
+            System.err.println("SQLException" + ex);
+        }
     }
 
     @FXML
     private void btnLogin(ActionEvent event) throws IOException {
+        Boolean inputValid = isInputValid();
+        Boolean isUserValid;
 
-        if (isInputValid()) {
+        if (inputValid) {
 
-            boolean isUserValid = UserDAO.login(userNameField.getText(), userPasswordField.getText());
+            isUserValid = UserDAO.login(userNameField.getText(), userPasswordField.getText());
 
             if (isUserValid) {
 
@@ -113,7 +131,6 @@ public class LoginController implements Initializable {
                 oldStage.close();
 
             } else {
-                System.out.println("");
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("İstifadəçi adı və ya Şifrə Yanlışdır");
                 alert.setHeaderText("Xəta : İstifadəçi adı və ya Şifrə Yanlışdır");
@@ -121,6 +138,8 @@ public class LoginController implements Initializable {
                 alert.initStyle(StageStyle.UNDECORATED);
                 alert.showAndWait();
             }
+
+        } else {
 
         }
     }
@@ -146,17 +165,15 @@ public class LoginController implements Initializable {
     @FXML
     private void hlCreateAnAccount(ActionEvent event) throws IOException {
 
-        String db = MyProperties.getDBProperties().getDbName();
-
         try {
-            ResultSet rs = DBUtil.directExecuteQuery(("SELECT Id FROM " + db + ".User ORDER BY Id ASC LIMIT 1"));
+            ResultSet rs = DBUtil.msAccessExecuteQuery(("SELECT Id FROM User ORDER BY Id ASC LIMIT 1"));
             if (rs.next()) {
                 System.out.println(rs.getString(1));
                 apMother.setOpacity(0.7);
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("Error");
-                alert.setContentText("You can't create an account without admin \n permission");
+                alert.setContentText("Yeni Istifadeci Qeydiyyati Mumkun deyil \n ");
                 alert.initStyle(StageStyle.UNDECORATED);
                 Optional<ButtonType> result = alert.showAndWait();
                 if (result.isPresent() && result.get() == ButtonType.OK) {
@@ -164,12 +181,12 @@ public class LoginController implements Initializable {
                 }
                 return;
             }
-            DBUtil.allDisconnect();
+            DBUtil.AllDisconnect();
 
             loadRegistration();
         } catch (SQLException ex) {
-            System.out.println("SQLException -  LoginController.hlCreateAnAccount(): " + ex);
-            MyLogger.logException("SQLException - LoginController.hlCreateAnAccount()", ex);
+            new ExceptionShowDialog(ex).showAndWait();
+            MyExceptionLogger.logException("SQLException - LoginController.hlCreateAnAccount()", ex);
         }
 
     }
@@ -179,16 +196,15 @@ public class LoginController implements Initializable {
         nStage.setScene(MyFXMLLoader.getSceneFromURL(MyProperties.getURLProperties().getRegistrationURL()));
         nStage.setMaximized(true);
         nStage.setTitle("Qeydiyyat - Sale Soft");
-        nStage.show();
+        nStage.showAndWait();
 
-        Stage stage = (Stage) hlCreateAccount.getScene().getWindow();
-        stage.close();
-
+//        Stage stage = (Stage) hlCreateAccount.getScene().getWindow();
+//        stage.close();
     }
 
     @FXML
     private void hlDbOnAction(ActionEvent event) {
-        DBUtil.showServerConfigView();
+        DBUtil.showmySQLServerConfigView();
     }
 
 }

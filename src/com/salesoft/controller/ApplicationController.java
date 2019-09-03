@@ -13,7 +13,6 @@ package com.salesoft.controller;
 //import controller.application.home.HomeController;
 //import dataBase.DBConnection;
 //import dataBase.DBProperties;
-import com.salesoft.DAO.DatabaseConnection;
 import com.salesoft.MainApp;
 import com.salesoft.util.MyFXMLLoader;
 import com.salesoft.util.MyProperties;
@@ -57,6 +56,12 @@ import javafx.util.Duration;
  * @author rifat
  */
 public class ApplicationController implements Initializable {
+
+    private static ApplicationController applicationController;
+
+    public static ApplicationController getApplicationController() {
+        return applicationController;
+    }
 
     @FXML
     private StackPane acContent;
@@ -182,6 +187,14 @@ public class ApplicationController implements Initializable {
         imgUsrTop.setFill(new ImagePattern(usrImg));
         circleImgUsr.setFill(new ImagePattern(usrImg));
 
+        // Proqram ishe dushen kimi Home Duymesi basilmish kimi Simulyasiya edek
+        btnHomeOnClick(new ActionEvent());
+
+        //Obyektimizi Statik Deyishkene yaziram ki Qiraqdan muraciet ede bilim
+        applicationController = this;
+        //artiq referanslar ucun yeni classimiz var
+        ControllersRef.ac = this;
+
     }
 
     @FXML
@@ -272,14 +285,13 @@ public class ApplicationController implements Initializable {
 
         //ve controllerimizden bize lazim olan metodu cagiririq
         anbarController.toggleButtonAnbarOnAction();
-        anbarController.setRoot(this);
 
         acContent.getChildren().clear();
         acContent.getChildren().add(ap);
     }
 
     @FXML
-    private void btnSellOnClick(ActionEvent event) {
+    public void btnSellOnClick(ActionEvent event) {
         sellActive();
 
         //bu Sehifemizin Controllerini almaq ucun istifade edeceyik
@@ -299,11 +311,11 @@ public class ApplicationController implements Initializable {
         }
 
         // controller obyektimizi loaderden aliriq
-        SaleRootLayoutController saleController = loader.getController();
+        //SaleRootLayoutController saleController = loader.getController();
+        ControllersRef.srlc = loader.getController();
 
         //ve controllerimizden bize lazim olan metodu cagiririq
-        saleController.toggleButtonSaleOnAction();
-        saleController.setRoot(this);
+        ControllersRef.srlc.toggleButtonSaleOnAction();
 
         acContent.getChildren().clear();
         acContent.getChildren().add(ap);
